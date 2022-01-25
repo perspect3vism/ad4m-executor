@@ -133,6 +133,7 @@ export default class PerspectivismCore {
             params.ipfsSwarmPort, 
             params.ipfsRepoPath
         ), this.#holochain.run()]);
+        // @ts-ignore
         this.#IPFS = ipfs;
         //this.connectToHardwiredPerspect3vismAgent()
     }

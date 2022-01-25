@@ -115,6 +115,10 @@ function createResolvers(core: PerspectivismCore) {
                 return core.perspectivesController.perspectiveID(args.uuid)
             },
             //@ts-ignore
+            fromUrl: (parent, args, context, info) => {
+                return core.perspectivesController.fromUrl(args.url)
+            },
+            //@ts-ignore
             perspectiveQueryLinks: async (parent, args, context, info) => {
                 const { uuid, query } = args
                 const perspective = core.perspectivesController.perspective(uuid)

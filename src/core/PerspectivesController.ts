@@ -9,6 +9,7 @@ import Perspective from './Perspective'
 export default class PerspectivesController {
     #perspectiveHandles: Map<string, PerspectiveHandle>
     #perspectiveInstances: Map<string, Perspective>
+    #urlPerspectiveMap: Map<string, string>
     #rootConfigPath
     pubsub
     #context
@@ -20,6 +21,7 @@ export default class PerspectivesController {
 
         this.#perspectiveHandles = new Map<string, PerspectiveHandle>()
         this.#perspectiveInstances = new Map<string, Perspective>()
+        this.#urlPerspectiveMap = new Map<string, string>()
 
         const FILENAME = 'perspectives.json'
         const FILEPATH = path.join(rootConfigPath, FILENAME)
@@ -32,6 +34,9 @@ export default class PerspectivesController {
                 console.debug(`PerspectivesController: Found existing perspective "${k}":`, perspective)
                 this.#perspectiveInstances.set(k, new Perspective(perspective, this.#context, perspective.neighbourhood as Neighbourhood))
                 this.#perspectiveHandles.set(k, perspective)
+                if (perspective.sharedUrl && perspective.sharedUrl.includes('neighbourhood://')) {
+                    this.#urlPerspectiveMap.set(perspective.sharedUrl, k);
+                }
             })
         }
 
@@ -94,6 +99,12 @@ export default class PerspectivesController {
         }
     }
 
+    fromUrl(url: string): Perspective {
+        const uuid = this.#urlPerspectiveMap.get(url);
+
+        return this.perspective(uuid || "");
+    }
+
     async perspectiveSnapshot(uuid: string): Promise<Ad4mPerspective> {
         let perspective = this.#perspectiveInstances.get(uuid)
         if (!perspective) {
@@ -111,6 +122,9 @@ export default class PerspectivesController {
         } as PerspectiveHandle;
         this.#perspectiveHandles.set(perspective.uuid, perspective)
         this.#perspectiveInstances.set(perspective.uuid, new Perspective(perspective, this.#context, neighbourhood))
+        if (sharedUrl) {
+            this.#urlPerspectiveMap.set(sharedUrl, perspective.uuid)
+        }
         this.save()
         this.pubsub.publish(PubSub.PERSPECTIVE_ADDED_TOPIC, { perspective })
         return perspective
@@ -119,10 +133,15 @@ export default class PerspectivesController {
     replace(perspectiveHandle: PerspectiveHandle, neighbourhood: Neighbourhood) {
         this.#perspectiveHandles.set(perspectiveHandle.uuid, perspectiveHandle);
         this.#perspectiveInstances.set(perspectiveHandle.uuid, new Perspective(perspectiveHandle, this.#context, neighbourhood));
+        if (perspectiveHandle.sharedUrl) {
+            this.#urlPerspectiveMap.set(perspectiveHandle.sharedUrl, perspectiveHandle.uuid)
+        }
         this.save()
     }
 
     remove(uuid: string) {
+        const perspective = this.perspective(uuid);
+        this.#urlPerspectiveMap.delete(perspective.sharedUrl!);
         this.#perspectiveHandles.delete(uuid)
         this.#perspectiveInstances.delete(uuid)
         this.save()
