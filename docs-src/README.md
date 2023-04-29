@@ -1,6 +1,6 @@
 # Introduction
 
-The name AD4M is an ackronym for
+The name AD4M is an acronym for
 *The **A**gent-Centric **D**istributed **A**pplication **M**eta-ontology* 
 or just: 
 **A**gent-Centric **DA**pp **M**eta-ontology.
@@ -75,7 +75,7 @@ and create new ones as Languages.
 
 ## Why?
 
-The goal is to arrive at scalable and interoparable communication infrastructure 
+The goal is to arrive at scalable and interoperable communication infrastructure 
 that enables **group agency**, i.e. **super agents** (here called Social Organisms)
 **without imposing a bias on how a group manages itself** 
 (and how it defines its coherence) to have agency 

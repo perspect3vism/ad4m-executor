@@ -33,9 +33,9 @@ This is the new mono-repository with all components making up a whole AD4M imple
  - `cli`: The new Rust based `ad4m` command-line based generic UI. See [it's readme](cli/README.md) for more details. Published to Crates.io as `ad4m`: https://crates.io/crates/ad4m
  - `rust-client`: Rust based `Ad4mClient`. Wraps GraphQL and provides the same high-level interface to AD4M as the TypeScript based version in core. Published to Crates.io as `ad4m-client`: https://crates.io/crates/ad4m-client.
 
-The project started in August 2020 in https://github.com/lucksus/perspectivism, then got broken down into the `ad4m` (core), `ad4m-executor` and [perspect3ve](https://github.com/perspect3vism/perspect3ve) repositories for simultaneuous use in [Flux](https://github.com/fluxsocial) and Perspect3ve. Other components got added over the years 2021, 2022.
+The project started in August 2020 in https://github.com/lucksus/perspectivism, then got broken down into the `ad4m` (core), `ad4m-executor` and [perspect3ve](https://github.com/perspect3vism/perspect3ve) repositories for simultaneous use in [Flux](https://github.com/fluxsocial) and Perspect3ve. Other components got added over the years 2021, 2022.
 
-In October/November 2022, these componentes were collected into a mono-repo again to avoid PR-chains across multiple repositories and to have version numbers be in lock-step.
+In October/November 2022, these components were collected into a mono-repo again to avoid PR-chains across multiple repositories and to have version numbers be in lock-step.
 
 ## Build
 
