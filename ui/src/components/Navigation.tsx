@@ -47,7 +47,7 @@ const Navigation = ({ did, opened, setOpened }: Props) => {
       <j-tabs
         value={location.pathname}
         onChange={(e) => navigate(e.target.value)}
-        variant="tab"
+        full
       >
         <j-tab-item value="/apps">Apps</j-tab-item>
         {expertMode && <j-tab-item value="/language">Languages</j-tab-item>}

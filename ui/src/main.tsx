@@ -3,8 +3,8 @@ import App from "./App";
 import reportWebVitals from "./reportWebVitals";
 import { Ad4minProvider } from "./context/Ad4minContext";
 import { BrowserRouter as Router } from "react-router-dom";
-import "@junto-foundation/junto-elements";
-import "@junto-foundation/junto-elements/dist/main.css";
+import "@fluxapp/ui";
+import "@fluxapp/ui/dist/main.css";
 import "./index.css";
 
 const Main = () => {

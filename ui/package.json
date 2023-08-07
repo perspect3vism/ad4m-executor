@@ -5,7 +5,7 @@
   "type": "module",
   "dependencies": {
     "@apollo/client": "3.7.10",
-    "@junto-foundation/junto-elements": "^0.5.5",
+    "@fluxapp/ui": "^0.5.30",
     "@perspect3vism/ad4m": "*",
     "@preact/preset-vite": "^2.4.0",
     "@tauri-apps/api": "^1.2.0",
