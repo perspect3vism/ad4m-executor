@@ -15,11 +15,17 @@ pub fn create_agent_expression(agent_expression: AgentExpression) -> ExternResul
     let did = EntryTypes::Did(Did(agent_expression.author.clone()));
     let did_hash = hash_entry(&did)?;
 
+    println!("Creating did entry: {:?}", did);
+
     create_entry(&did)?;
+
+    println!("Creating agent expression entry: {:?}", agent_expression);
 
     let agent_expression = EntryTypes::AgentExpression(agent_expression);
     let agent_expression_hash = hash_entry(&agent_expression)?;
     create_entry(&agent_expression)?;
+
+    println!("Creating link between did and agent expression");
 
     //Link profile entry to did
     create_link(
@@ -28,6 +34,8 @@ pub fn create_agent_expression(agent_expression: AgentExpression) -> ExternResul
         LinkTypes::ProfileLink,
         LinkTag::new("profile"),
     )?;
+
+    println!("Agent expression created");
 
     Ok(())
 }

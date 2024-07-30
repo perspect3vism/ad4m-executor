@@ -1144,11 +1144,12 @@ class Adapter {
     async get(address) {
         const metaPath = join3(this.#storagePath, `meta-${address}.json`);
         try {
-            await exists(metaPath);
-            const metaFile = JSON.parse(Deno.readTextFileSync(metaPath));
-            console.log("Found meta file info", metaFile);
+            // await Deno.stat(metaPath);
+            const metaFileText = Deno.readTextFileSync(metaPath);
+            const metaFile = JSON.parse(metaFileText);
             return metaFile;
-        } catch  {
+        } catch (e)  {
+            console.log("Did not find meta file for given address:" + address, e);
             return null;
         }
     }

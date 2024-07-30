@@ -4084,10 +4084,10 @@ LinkQuery = __decorate$7([
 
 var ExceptionType;
 (function (ExceptionType) {
-    ExceptionType[ExceptionType["LanguageIsNotLoaded"] = 0] = "LanguageIsNotLoaded";
-    ExceptionType[ExceptionType["ExpressionIsNotVerified"] = 1] = "ExpressionIsNotVerified";
-    ExceptionType[ExceptionType["AgentIsUntrusted"] = 2] = "AgentIsUntrusted";
-    ExceptionType[ExceptionType["CapabilityRequested"] = 3] = "CapabilityRequested";
+    ExceptionType[ExceptionType["LanguageIsNotLoaded"] = 0] = "LANGUAGE_IS_NOT_LOADED";
+    ExceptionType[ExceptionType["ExpressionIsNotVerified"] = 1] = "EXPRESSION_IS_NOT_VERIFIED";
+    ExceptionType[ExceptionType["AgentIsUntrusted"] = 2] = "AGENT_IS_UNTRUSTED";
+    ExceptionType[ExceptionType["CapabilityRequested"] = 3] = "CAPABILITY_REQUESTED";
 })(ExceptionType || (ExceptionType = {}));
 
 var __decorate$6 = function (decorators, target, key, desc) {

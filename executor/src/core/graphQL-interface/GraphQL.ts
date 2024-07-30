@@ -20,7 +20,7 @@ export function createResolvers(core: Ad4mCore, config: OuterConfig) {
                         throw Error("Agent language does not have an expression adapter")
                     }
                     const expr = await agentLanguage.get(did);
-                    if (expr != null) {
+                    if (expr != null && Object.keys(expr).length > 0){
                         tagExpressionSignatureStatus(expr);
                         for(const link of expr.data.perspective.links) {
                             tagExpressionSignatureStatus(link)
@@ -38,7 +38,11 @@ export function createResolvers(core: Ad4mCore, config: OuterConfig) {
                 const url = args.url.toString();
                 const ref = parseExprUrl(url)
                 const expression = await core.languageController.getExpression(ref);
-                if(expression) {
+                console.log("GQL| expression:", JSON.stringify(expression));
+                if (expression && Object.keys(expression).length === 0) {
+                    return null;
+                } else if(expression) {
+                    console.log("GQL| expression 1:", JSON.stringify(expression));
                     expression.ref = ref
                     expression.url = url
                     expression.data = JSON.stringify(expression.data)
@@ -75,7 +79,9 @@ export function createResolvers(core: Ad4mCore, config: OuterConfig) {
                 const results = await Promise.all(expressionPromises);
 
                 return await Promise.all(results.map(async (expression: Expression|null, index) => {
-                    if(expression) {
+                    if (expression && Object.keys(expression).length === 0) {
+                        return null;
+                    } else if(expression && Object.keys(expression).length > 0) {
                         expression.ref = parseExprUrl(urls[index]);
                         expression.url = urls[index];
                         expression.data = JSON.stringify(expression.data);

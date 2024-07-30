@@ -32,16 +32,9 @@ fn telepresence_signal_received(
     crate::perspectives::handle_telepresence_signal_from_link_language(signal, language_address);
 }
 
-
-pub fn build() -> Extension {
-    Extension {
-        name: "agent",
-        js_files: Cow::Borrowed(&include_js_files!(rust_executor "src/js_core/languages_extension.js",)),
-        ops: Cow::Borrowed(&[
-            perspective_diff_received::DECL,
-            sync_state_changed::DECL,
-            telepresence_signal_received::DECL,
-        ]),
-        ..Default::default()
-    }
-}
+deno_core::extension!(
+    language_service,
+    ops = [perspective_diff_received, sync_state_changed, telepresence_signal_received],
+    esm_entry_point = "ext:language_service/languages_extension.js",
+    esm = [dir "src/js_core", "languages_extension.js"]
+);

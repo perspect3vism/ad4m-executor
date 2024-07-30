@@ -1,9 +1,11 @@
-((globalThis) => {
-    const core = Deno.core;
+import {
+    publish
+} from 'ext:core/ops';
 
+((globalThis) => {
     globalThis.PUBSUB = {
         publish: async (topic, data) => {
-            return core.opAsync("publish", topic, JSON.stringify(data));
+            return publish(topic, JSON.stringify(data));
         }
     };
   })(globalThis);

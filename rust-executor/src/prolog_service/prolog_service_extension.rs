@@ -112,16 +112,9 @@ async fn load_module_string(
         .await
 }
 
-pub fn build() -> Extension {
-    Extension {
-        name: "prolog_service",
-        js_files: Cow::Borrowed(&include_js_files!(holochain_service "src/prolog_service/prolog_service_extension.js",)),
-        ops: Cow::Borrowed(&[
-            spawn_engine::DECL,
-            remove_engine::DECL,
-            run_query::DECL,
-            load_module_string::DECL,
-        ]),
-        ..Default::default()
-    }
-}
+deno_core::extension!(
+    prolog_service,
+    ops = [spawn_engine, remove_engine, run_query, load_module_string],
+    esm_entry_point = "ext:prolog_service/prolog_service_extension.js",
+    esm = [dir "src/prolog_service", "prolog_service_extension.js"]
+);

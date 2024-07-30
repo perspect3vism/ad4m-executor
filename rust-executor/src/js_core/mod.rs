@@ -1,11 +1,12 @@
 use ::futures::Future;
 use deno_core::anyhow::anyhow;
 use deno_core::error::AnyError;
-use deno_core::resolve_url_or_path;
+use deno_core::{resolve_url_or_path, v8, PollEventLoopOptions};
 use deno_runtime::worker::MainWorker;
 use deno_runtime::{permissions::PermissionsContainer, BootstrapOptions};
 use holochain::prelude::{ExternIO, Signal};
 use once_cell::sync::Lazy;
+use std::collections::HashSet;
 use std::env::current_dir;
 use std::sync::Arc;
 use tokio::runtime::Builder;
@@ -74,7 +75,7 @@ impl JsCoreHandle {
 
         let response = response_rx.await?;
 
-        //info!("Got response: {:?}", response.id);
+        // info!("Got response: {:?}", response);
 
         response
             .result
@@ -93,7 +94,7 @@ impl JsCoreHandle {
             .expect("couldn't send on channel... it is likely that the main worker thread has crashed...");
 
         let response = response_rx.await?;
-
+        
         response
             .result
             .map_err(|err| anyhow!(err))
@@ -116,6 +117,7 @@ struct JsCoreResponse {
 #[derive(Clone)]
 pub struct JsCore {
     worker: Arc<TokioMutex<MainWorker>>,
+    loaded_modules: Arc<TokioMutex<HashSet<String>>>
 }
 
 pub struct ExternWrapper(ExternIO);
@@ -145,15 +147,22 @@ impl JsCore {
                 PermissionsContainer::allow_all(),
                 main_worker_options(),
             ))),
+            loaded_modules: Arc::new(TokioMutex::new(HashSet::new()))
         }
     }
 
     async fn load_module(&self, file_path: String) -> Result<(), AnyError> {
         let mut worker = self.worker.lock().await;
+        let mut loaded_modules = self.loaded_modules.lock().await;
         let url = resolve_url_or_path(&file_path, current_dir()?.as_path())?;
-        let _module_id = worker.js_runtime.load_side_module(&url, None).await?;
-        //TODO; this likely needs to be run (although might be handled by the import in the js code when import() is called)
-        //worker.js_runtime.mod_evaluate(module_id);
+        if loaded_modules.contains(url.clone().as_str()) {
+            return Ok(());
+        }
+
+        let module_id = worker.js_runtime.load_side_es_module(&url).await?;
+        loaded_modules.insert(url.clone().to_string());
+        let evaluate_fut = worker.js_runtime.mod_evaluate(module_id);
+        worker.js_runtime.with_event_loop_future(evaluate_fut, PollEventLoopOptions::default()).await?;
         Ok(())
     }
 
@@ -177,8 +186,7 @@ impl JsCore {
     async fn execute_async_smart(
         &self,
         script: String
-    ) -> Result<SmartGlobalVariableFuture, AnyError> {
-        let mut worker = self.worker.lock().await;
+    ) -> Result<SmartGlobalVariableFuture<impl Future<Output = Result<v8::Global<v8::Value>, AnyError>>>, AnyError> { 
         let wrapped_script = format!(
             r#"
             (async () => {{
@@ -186,9 +194,14 @@ impl JsCore {
             }})();
             "#, script
         );
-        //info!("Sending script: {}", wrapped_script);
-        let execute_async = worker.execute_script("js_core", wrapped_script.into())?;
-        Ok(SmartGlobalVariableFuture::new(self.worker.clone(), execute_async))
+    
+        let resolve_fut = {
+            let mut worker = self.worker.lock().await;
+            let execute_async = worker.execute_script("js_core", wrapped_script.into());
+            worker.js_runtime.resolve(execute_async.unwrap().into())
+        };
+    
+        Ok(SmartGlobalVariableFuture::new(self.worker.clone(), resolve_fut))
     }
 
     fn generate_execution_slot(
@@ -210,8 +223,10 @@ impl JsCore {
                     tokio::task::spawn_local(async move {
                         // info!("Spawn local driving: {}", id);
                         //let local_variable_name = uuid_to_valid_variable_name(&id);
-                        let script_fut =
-                            js_core_cloned.execute_async_smart(script).await.unwrap();
+                        let script_fut = js_core_cloned
+                            .execute_async_smart(script)
+                            .await
+                            .expect("Couldn't create execute_async_smart future");
                         //info!("Script fut created: {}", id);
                         match script_fut.await {
                             Ok(res) => {
@@ -261,13 +276,15 @@ impl JsCore {
                 let result = js_core.init_engine().await;
                 info!("AD4M JS engine init completed, with result: {:?}", result);
 
-                let init_core_future = js_core
-                    .execute_async_smart(format!("initCore({})", config.get_json()).into());
-                let result = init_core_future.await.unwrap().await;
+                let result = js_core
+                    .execute_async_smart(format!("initCore({})", config.get_json()).into())
+                    .await
+                    .expect("to be able to create js execution future")
+                    .await ;
 
                 match result {
                     Ok(res) => {
-                        info!("AD4M coreInit() completed Succesfully: {}", res);
+                        info!("AD4M coreInit() completed Succesfully: {:?}", res);
                         tx_inside
                             .send(JsCoreResponse {
                                 result: Ok(String::from("initialized")),
@@ -285,7 +302,7 @@ impl JsCore {
                 }
 
                 loop {
-                    info!("Main loop running");
+                    //info!("Main loop running");
                     //Listener future for loading JS modules into runtime
                     let module_load_fut = async {
                         loop {
@@ -371,7 +388,7 @@ impl JsCore {
 
                         event_loop_result = js_core.event_loop() => {
                             match event_loop_result {
-                                Ok(_) => info!("AD4M event loop finished"),
+                                Ok(_) => {} //info!("AD4M event loop finished"),
                                 Err(err) => {
                                     error!("AD4M event loop closed with error: {}", err);
                                     break;

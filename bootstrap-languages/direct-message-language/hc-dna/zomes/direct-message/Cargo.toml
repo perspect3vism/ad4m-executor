@@ -10,12 +10,12 @@ name = "direct_message"
 
 [dependencies]
 derive_more = "0"
-serde = "1"
+serde = "1.0.198"
 serde_json = "1"
-chrono = { version = "0.4.31", default-features = false, features = ["clock", "std", "oldtime", "serde"] }
+chrono = { version = "0.4.38", default-features = false, features = ["clock", "std", "oldtime", "serde"] }
 hex = "0.4.3"
 
-hdk = { version = "0.3.0-beta-dev.33" }
-holo_hash = { version = "0.3.0-beta-dev.22"}
+hdk = { version = "0.4.0-dev.9", git = "https://github.com/coasys/holochain", rev = "60b035888f15b9989e2852f6399f692fb73f5a7e" }
+holo_hash = { version = "0.4.0-dev.7", git = "https://github.com/coasys/holochain", rev = "60b035888f15b9989e2852f6399f692fb73f5a7e"}
 
 direct-message-integrity = { path = "../direct-message-integrity" }

@@ -29,6 +29,8 @@ RUN echo 'export PATH="/usr/local/bin:$PATH"' >> $HOME/.bashrc
 # Install Rust
 RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
 RUN echo 'export PATH="$HOME/.cargo/bin:$PATH"' >> /home/circleci/.bashrc
+RUN ~/.cargo/bin/rustup install 1.78
+RUN ~/.cargo/bin/rustup default 1.78
 RUN ~/.cargo/bin/rustup target add wasm32-unknown-unknown
 
 # Install Deno

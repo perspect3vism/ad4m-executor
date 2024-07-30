@@ -3,14 +3,17 @@ use deno_runtime::worker::WorkerOptions;
 use std::{collections::HashMap, rc::Rc};
 use url::Url;
 
-use super::{
-    pubsub_extension, string_module_loader::StringModuleLoader, utils_extension,
-    wallet_extension, signature_extension, agent_extension, languages_extension,
-};
-use crate::entanglement_service::entanglement_service_extension;
-use crate::holochain_service::holochain_service_extension;
-use crate::prolog_service::prolog_service_extension;
-use crate::runtime_service::runtime_service_extension;
+use super::agent_extension::agent_service;
+use super::languages_extension::language_service;
+use super::pubsub_extension::pubsub_service;
+use super::signature_extension::signature_service;
+use super::utils_extension::utils_service;
+use super::wallet_extension::wallet_service;
+use super::string_module_loader::StringModuleLoader;
+use crate::entanglement_service::entanglement_service_extension::{self, entanglement_service};
+use crate::holochain_service::holochain_service_extension::{self, holochain_service};
+use crate::prolog_service::prolog_service_extension::{self, prolog_service};
+use crate::runtime_service::runtime_service_extension::{self, runtime_service};
 
 pub fn main_module_url() -> Url {
     Url::parse("https://ad4m.runtime/main").unwrap()
@@ -51,29 +54,18 @@ pub fn main_worker_options() -> WorkerOptions {
         loader.add_module(specifier.as_str(), code.as_str());
     }
 
-    let wallet_ext = wallet_extension::build();
-    let utils_ext = utils_extension::build();
-    let sub_ext = pubsub_extension::build();
-    let holochain_ext = holochain_service_extension::build();
-    let prolog_ext = prolog_service_extension::build();
-    let signature_ext = signature_extension::build();
-    let agent_ext = agent_extension::build();
-    let entanglement_ext = entanglement_service_extension::build();
-    let runtime_ext = runtime_service_extension::build();
-    let languages_ext = languages_extension::build();
-
     WorkerOptions {
         extensions: vec![
-            wallet_ext,
-            utils_ext,
-            sub_ext,
-            holochain_ext,
-            prolog_ext,
-            signature_ext,
-            agent_ext,
-            entanglement_ext,
-            runtime_ext,
-            languages_ext,
+            wallet_service::init_ops_and_esm(),
+            utils_service::init_ops_and_esm(),
+            pubsub_service::init_ops_and_esm(),
+            holochain_service::init_ops_and_esm(),
+            prolog_service::init_ops_and_esm(),
+            signature_service::init_ops_and_esm(),
+            agent_service::init_ops_and_esm(),
+            entanglement_service::init_ops_and_esm(),
+            runtime_service::init_ops_and_esm(),
+            language_service::init_ops_and_esm(),
         ],
         module_loader: Rc::new(loader),
         ..Default::default()

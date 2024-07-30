@@ -32,7 +32,7 @@ futures = "0.3"
 tokio = { version = "1.25.0", features = ["full"] }
 rustyline = "10"
 dirs = "4"
-chrono = { version = "0.4.31", features = ["serde"] }
+chrono = { version = "0.4.38", features = ["serde"] }
 serde_json = "1"
 urlencoding = "2"
 unicode-width = "0.1"
@@ -44,4 +44,5 @@ syntect = "5.0"
 ctrlc = "3.4.0"
 
 #holochain_kitsune_p2p = "0.3.0-beta-dev.37"
-kitsune_p2p_types = { version = "0.3.0-beta-dev.22" }
+# kitsune_p2p_types = { version = "0.4.0-dev.8", path = "../../holochain/crates/kitsune_p2p/types" }
+kitsune_p2p_types = { version = "0.4.0-dev.8", git = "https://github.com/coasys/holochain", rev = "60b035888f15b9989e2852f6399f692fb73f5a7e"}

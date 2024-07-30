@@ -1,15 +1,17 @@
-((globalThis) => {
-    const core = Deno.core;
+import {
+    friends, add_message_outbox, get_trusted_agents
+} from 'ext:core/ops';
 
+((globalThis) => {
     globalThis.RUNTIME_SERVICE = {
         friends: async () => {
-            return core.ops.friends();
+            return friends();
         },
         addMessageOutbox: async (did, message, wasSent) => {
-            return core.ops.add_message_outbox(did, message, wasSent);
+            return add_message_outbox(did, message, wasSent);
         },
         getTrustedAgents: async () => {
-            return core.ops.get_trusted_agents();
+            return get_trusted_agents();
         },
     }
 })(globalThis);

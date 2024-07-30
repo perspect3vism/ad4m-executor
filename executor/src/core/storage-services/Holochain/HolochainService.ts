@@ -56,7 +56,7 @@ export default class HolochainService {
         this.#languageDnaHashes = new Map();
 
         if (logHolochainMetrics) {
-            this.logDhtStatus();
+            // this.logDhtStatus();
         }
     }
 

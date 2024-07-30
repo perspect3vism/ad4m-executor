@@ -10,3 +10,6 @@ members = [
 
 [patch.crates-io]
 notify-rust = { version = "4.6.0", git = "https://github.com/coasys/notify-rust.git" }
+# reqwest = { version = "0.11.20", git = "https://github.com/coasys/reqwest.git", rev = "f2c08343e14f784d675ada72bdf4adf32af654e7"}
+# reqwest = { version = "0.11.20", path = "../reqwest"}
+rusqlite = { version = "0.29", features = ["bundled"], git = "https://github.com/coasys/rusqlite.git", rev = "12ec1330bd4b46411ab9895364da4a3e172d0fbb" }

@@ -35,14 +35,14 @@ class Sharing implements PublicSharing {
   }
 
   async createPublic(content: Agent): Promise<Address> {
-
+    console.log("ppppppp 1", JSON.stringify(content));
     if(!content['did'] || !content['perspective'] || !content['perspective'].links)
       throw "Content must be an Agent object"
-
+    console.log("ppppppp 2");
     const agent = content as Agent
     if(agent.did != this.#agent.did)
       throw "Can't set Agent Expression for foreign DID - only for self"
-
+    console.log("ppppppp 3");
     if(!agent.directMessageLanguage)
       agent.directMessageLanguage = undefined
 
@@ -52,7 +52,11 @@ class Sharing implements PublicSharing {
       delete link.status
     })
 
+    console.log("ppppppp 4", JSON.stringify(agent));
+
     const expression = this.#agent.createSignedExpression(agent);
+
+    console.log("ppppppp 5", JSON.stringify(expression));
 
     await this.#DNA.call(
       DNA_NICK,
@@ -60,6 +64,8 @@ class Sharing implements PublicSharing {
       "create_agent_expression",
       expression
     );
+
+    console.log("ppppppp 6", agent.did);
 
     return agent.did
   }

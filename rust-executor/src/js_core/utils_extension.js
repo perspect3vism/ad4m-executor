@@ -1,24 +1,24 @@
-((globalThis) => {
-    const core = Deno.core;
+import { console_log, console_debug, console_error, console_warn, hash, load_module } from "ext:core/ops";
 
+((globalThis) => {
     globalThis.UTILS = {
         hash: (data) => {
-            return core.ops.hash(data);
+            return hash(data);
         },
         loadModule: async (path) => {
-            return core.opAsync("load_module", path);
+            return load_module(path);
         },
         consoleLog: (args) => {
-            return core.ops.console_log(args);
+            return console_log(args);
         },
         consoleDebug: (args) => {
-            return core.ops.console_debug(args);
+            return console_debug(args);
         },
         consoleError: (args) => {
-            return core.ops.console_error(args);
+            return console_error(args);
         },
         consoleWarn: (args) => {
-            return core.ops.console_warn(args);
+            return console_warn(args);
         }
     };
   })(globalThis);

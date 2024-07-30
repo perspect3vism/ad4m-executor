@@ -5,12 +5,15 @@ use chrono::Duration;
 use crypto_box::rand_core::OsRng;
 use deno_core::anyhow::anyhow;
 use deno_core::error::AnyError;
-use holochain::conductor::api::{AppInfo, CellInfo, ZomeCall};
+use futures::stream_select;
+use holochain::conductor::api::{AppInfo, AppStatusFilter, CellInfo, ZomeCall};
 use holochain::conductor::config::ConductorConfig;
 use holochain::conductor::paths::DataRootPath;
 use holochain::conductor::{ConductorBuilder, ConductorHandle};
 use holochain::prelude::agent_store::AgentInfoSigned;
 use holochain::prelude::hash_type::Agent;
+use holochain::tracing::instrument::WithSubscriber;
+use holochain_types::websocket::AllowedOrigins;
 use kitsune_p2p_types::config::{KitsuneP2pTuningParams, KitsuneP2pConfig, NetworkType, TransportConfig};
 use kitsune_p2p_types::dependencies::url2::Url2;
 use holochain::prelude::{
@@ -26,6 +29,7 @@ use tokio::select;
 use tokio::sync::{mpsc, oneshot, Mutex};
 use tokio::task::yield_now;
 use tokio::time::timeout;
+use tokio_stream::wrappers::BroadcastStream;
 use tokio_stream::StreamExt;
 
 pub(crate) mod holochain_service_extension;
@@ -79,6 +83,7 @@ impl HolochainService {
     pub async fn init(local_config: LocalConductorConfig) -> Result<(), AnyError> {
         let (sender, mut receiver) = mpsc::unbounded_channel::<HolochainServiceRequest>();
         let (stream_sender, stream_receiver) = mpsc::unbounded_channel::<Signal>();
+        let (new_app_ids_sender, mut new_app_ids_receiver) = mpsc::unbounded_channel::<AppInfo>();
 
         let inteface = HolochainServiceInterface {
             sender,
@@ -100,28 +105,36 @@ impl HolochainService {
                     let mut service = HolochainService::new(local_config).await.unwrap();
                     let conductor_clone = service.conductor.clone();
 
+                    
+
                     // Spawn a new task to forward items from the stream to the receiver
                     let spawned_sig = tokio::spawn(async move {
-                        let sig_broadcasters = conductor_clone.signal_broadcaster();
 
-                        let mut streams = tokio_stream::StreamMap::new();
-                        for (i, rx) in sig_broadcasters
-                            .subscribe_separately()
-                            .into_iter()
-                            .enumerate()
-                        {
-                            streams.insert(i, tokio_stream::wrappers::BroadcastStream::new(rx));
-                        }
-                        let mut stream =
-                            streams.map(|(_, signal)| signal.expect("Couldn't receive a signal"));
+                        let mut streams: tokio_stream::StreamMap<String, tokio_stream::wrappers::BroadcastStream<Signal>> = tokio_stream::StreamMap::new();
+                        conductor_clone.list_apps(Some(AppStatusFilter::Running)).await.unwrap().into_iter().for_each(|app| {                            
+                            let sig_broadcasters = conductor_clone.subscribe_to_app_signals(app.installed_app_id.clone());
+                            streams.insert(app.installed_app_id.clone(), tokio_stream::wrappers::BroadcastStream::new(sig_broadcasters));
+                        });    
+
 
                         response_sender
                             .send(HolochainServiceResponse::InitComplete(Ok(())))
                             .unwrap();
 
                         loop {
-                            while let Some(item) = stream.next().await {
-                                let _ = stream_sender.send(item);
+                            tokio::select! {
+                                Some((_, maybe_signal)) = streams.next() => {
+                                    if let Ok(signal) = maybe_signal {
+                                        let _ = stream_sender.send(signal);
+                                    } else {
+                                        log::error!("Got error from Holochain through app signal stream: {:?}", maybe_signal.err().expect("to be error since we're in else case"))
+                                    }
+                                }
+                                Some(new_app_id) = new_app_ids_receiver.recv() => {
+                                    let sig_broadcasters = conductor_clone.subscribe_to_app_signals(new_app_id.installed_app_id.clone());
+                                    streams.insert(new_app_id.installed_app_id.clone(), tokio_stream::wrappers::BroadcastStream::new(sig_broadcasters));
+                                }
+                                else => break,
                             }
                             yield_now().await;
                         }
@@ -136,6 +149,9 @@ impl HolochainService {
                                         service.install_app(payload)
                                     ).await.map_err(|_| anyhow!("Timeout error; InstallApp call")) {
                                         Ok(result) => {
+                                            if let Ok(app_info) = &result {
+                                                let _ = new_app_ids_sender.send(app_info.clone());
+                                            }
                                             let _ = response.send(HolochainServiceResponse::InstallApp(result));
                                         },
                                         Err(err) => {
@@ -313,7 +329,7 @@ impl HolochainService {
             _ => unreachable!(),
         };
 
-        inteface.add_agent_infos(agent_infos_from_str(COASYS_BOOTSTRAP_AGENT_INFO).expect("Couldn't deserialize hard-wired AgentInfo")).await?;
+        // inteface.add_agent_infos(agent_infos_from_str(COASYS_BOOTSTRAP_AGENT_INFO).expect("Couldn't deserialize hard-wired AgentInfo")).await?;
 
         set_holochain_service(inteface).await;
 
@@ -366,12 +382,14 @@ impl HolochainService {
                     // dev - wss://signal.holotest.net
                     // our - ws://207.148.16.17:42697
                     signal_url: local_config.proxy_url,
+                    webrtc_config: None
                 }];
             } else {
                 kitsune_config.transport_pool = vec![
                     TransportConfig::Mem {},
                     TransportConfig::WebRTC {
                         signal_url: local_config.proxy_url,
+                        webrtc_config: None
                     },
                 ];
             }
@@ -398,7 +416,7 @@ impl HolochainService {
 
         let interface = conductor
             .clone()
-            .add_app_interface(Either::Left(local_config.app_port))
+            .add_app_interface(Either::Left(local_config.app_port), AllowedOrigins::Any, None)
             .await;
 
         info!("Added app interface: {:?}", interface);

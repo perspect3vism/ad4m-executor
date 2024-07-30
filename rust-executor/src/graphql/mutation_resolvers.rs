@@ -422,8 +422,11 @@ impl Mutation {
             ))"#,
             language_meta_json, language_path
         );
+        
         let result = js.execute(script).await?;
+        println!("language_publish result: {:?}", result);
         let result: JsResultType<LanguageMeta> = serde_json::from_str(&result)?;
+        println!("language_publish result 1: {:?}", result);
         result.get_graphql_result()
     }
 

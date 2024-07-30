@@ -1,26 +1,32 @@
+import {
+    agent_did_document, agent_signing_key_id, agent_did, agent_create_signed_expression, agent_sign,
+    agent_sign_string_hex, agent_load, agent, agent_is_initialized, agent_is_unlocked, agent_unlock,
+    agent_lock, agent_create_signed_expression_stringified, save_agent_profile
+} from 'ext:core/ops';
+
 ((globalThis) => {
     const core = Deno.core;
 
     globalThis.AGENT = {
         didDocument: () => {
-            return core.ops.agent_did_document();
+            return agent_did_document();
         },
         signingKeyId: () => {
-            return core.ops.agent_signing_key_id();
+            return agent_signing_key_id();
         },
         did: () => {
-            return core.ops.agent_did();
+            return agent_did();
         },
         createSignedExpression: (data) => {
             try {
-                return core.ops.agent_create_signed_expression(data);
+                return agent_create_signed_expression(data);
             } catch (error) {
                 console.error("Error calling agent_create_signed_expression:", error);
                 console.error("Data was:", data)
                 console.log("Falling back to stringified version")
                 try {
                     let stringified = JSON.stringify(data);
-                    let resultString = core.ops.agent_create_signed_expression_stringified(stringified)
+                    let resultString = agent_create_signed_expression_stringified(stringified)
                     let result = JSON.parse(resultString);
                     return result;
                 } catch (error) {
@@ -30,31 +36,31 @@
             }
         },
         sign: (payload) => {
-            return core.ops.agent_sign(payload);
+            return agent_sign(payload);
         },
         signStringHex: (payload) => {
-            return core.ops.agent_sign_string_hex(payload);
+            return agent_sign_string_hex(payload);
         },
         load: () => {
-            return core.ops.agent_load();
+            return agent_load();
         },
         agent: () => {
-            return core.ops.agent();
+            return agent();
         },
         isInitialized: () => {
-            return core.ops.agent_is_initialized();
+            return agent_is_initialized();
         },
         isUnlocked: () => {
-            return core.ops.agent_is_unlocked();
+            return agent_is_unlocked();
         },
         unlock: (password) => {
-            return core.ops.agent_unlock(password);
+            return agent_unlock(password);
         },
         lock: () => {
-            return core.ops.agent_lock();
+            return agent_lock();
         },
         save_agent_profile: (profile) => {
-            return core.ops.save_agent_profile(profile);
+            return save_agent_profile(profile);
         }
     };
 })(globalThis);

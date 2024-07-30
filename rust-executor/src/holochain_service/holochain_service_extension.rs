@@ -183,26 +183,9 @@ async fn unpack_dna(#[string] path: String) -> Result<String, AnyError> {
 }
 
 //Implement signal callbacks from dna/holochain to js
-
-pub fn build() -> Extension {
-    Extension {
-        name: "holochain_service",
-        js_files: Cow::Borrowed(&include_js_files!(holochain_service "src/holochain_service/holochain_service_extension.js",)),
-        ops: Cow::Borrowed(&[
-            start_holochain_conductor::DECL,
-            log_dht_status::DECL,
-            install_app::DECL,
-            get_app_info::DECL,
-            call_zome_function::DECL,
-            agent_infos::DECL,
-            add_agent_infos::DECL,
-            remove_app::DECL,
-            sign_string::DECL,
-            shutdown::DECL,
-            get_agent_key::DECL,
-            pack_dna::DECL,
-            unpack_dna::DECL,
-        ]),
-        ..Default::default()
-    }
-}
+deno_core::extension!(
+    holochain_service,
+    ops = [start_holochain_conductor, log_dht_status, install_app, get_app_info, call_zome_function, agent_infos, add_agent_infos, remove_app, sign_string, shutdown, get_agent_key, pack_dna, unpack_dna],
+    esm_entry_point = "ext:holochain_service/holochain_service_extension.js",
+    esm = [dir "src/holochain_service", "holochain_service_extension.js"]
+);
