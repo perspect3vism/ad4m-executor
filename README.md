@@ -2,7 +2,7 @@
 [![Docs](https://img.shields.io/badge/Docs-AD4M-blue.svg)](http://docs.ad4m.dev/)
 [![License: CAL 1.0](https://img.shields.io/badge/License-CAL%201.0-blue.svg)](https://github.com/holochain/cryptographic-autonomy-license)
 
-![Logo](docs-src/ad4mlogo_green_angle2_colouremblem.png)
+![Logo](docs/public/images/ad4mlogo_green_angle2_colouremblem.png)
 
 # AD4M
 
@@ -165,7 +165,7 @@ This is a mono-repository with all components making up a whole ADAM Layer imple
 - `rust-client`: Rust based `Ad4mClient`. Wraps GraphQL and provides the same high-level interface to AD4M as the TypeScript based version in core. Published to Crates.io as `ad4m-client`: https://crates.io/crates/ad4m-client.
 - `tests`: JS testing suit integration testing a built `rust-executor`. Contains 50+ integration tests covering most function calls to an Adam Layer GraphQL server.
 - `cli`: Rust based CLI for either init'ing `ad4m init`, running `ad4m run` or communciating with a running AD4M GraphQL server. See [it's readme](cli/README.md) for more details. Published to Crates.io as `ad4m`: https://crates.io/crates/ad4m
-- `ui`: Tauri based system-tray icon launcher UI which is the end-user deployment; includes the rust-executor & UI to interact with gien executor.
+- `ui`: Tauri based system-tray icon launcher UI which is the end-user deployment; includes the rust-executor & UI to interact with given executor.
 
 ---
 
