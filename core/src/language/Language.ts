@@ -5,6 +5,7 @@ import { Perspective, PerspectiveExpression } from '../perspectives/Perspective'
 import { PerspectiveDiff } from '../perspectives/PerspectiveDiff';
 import { InputType, Field, ObjectType } from "type-graphql";
 import { PerspectiveState } from '../perspectives/PerspectiveHandle';
+import { LinkQuery } from '../perspectives/LinkQuery';
 
 /** Interface of AD4M Languages
  * 
@@ -41,8 +42,14 @@ export interface Language {
     /** Interface for getting UI/web components for rendering Expressions of this Language */
     readonly expressionUI?: ExpressionUI;
 
+    // TODO: Rename linksAdapter to perspectiveSyncAdapter needs a lot of changes elsewhere...
     /** Interface of LinkLanguages for the core implementation of Neighbourhoods */
-    readonly linksAdapter?: LinkSyncAdapter;
+    readonly perspectiveSyncAdapter?: PerspectiveSyncAdapter;
+
+    /** Interface for Languages that implement a query return a Perspective (snapshot)
+     * Used for back-links and wrapping of APIs that implement queries.
+     */
+    readonly pespectiveQueryAdapter?: PerspectiveQueryAdapter;
 
     /** Additional Interface of LinkLanguages that support telepresence features, 
      * that is: 
@@ -156,11 +163,11 @@ export type SyncStateChangeObserver = (state: PerspectiveState)=>void;
  * The assumption is that every version of the shared Perspective
  * is labeled with a unique revision string.
  * Changes are committed and retrieved through diffs.
- * Think of a LinkSyncAdapter as a git branch to which agents commit
+ * Think of a PerspectiveSyncAdapter as a git branch to which agents commit
  * their changes to and pull diffs from their current revision
  * to the latest one.
  */
-export interface LinkSyncAdapter {
+export interface PerspectiveSyncAdapter {
     writable(): boolean;
     public(): boolean;
     others(): Promise<DID[]>;
@@ -263,4 +270,42 @@ export interface TelepresenceAdapter {
     sendSignal(remoteAgentDid: string, payload: PerspectiveExpression): Promise<object>;
     sendBroadcast(payload: PerspectiveExpression): Promise<object>;
     registerSignalCallback(callback: TelepresenceSignalCallback): Promise<void>;
+}
+
+
+/** Interface for Languages that implement queries returning links, i.e. a Perspective (-snapshot)
+ * Main differentiation between these Languages and LinkLanguages is that this enables
+ * access to other shared perspectives without forcing a full-sync.
+ * 
+ * All PerspectiveQuery Languages are supposed to implement `linkQuery` which is a simple graph query
+ * specifying non or all of source, predicate, target of the links we want to get.
+ * This is enough to implement simple back-links.
+ * 
+ * Prolog queries are optional since this requires a Prolog engine to be available.
+ * 
+ */
+export interface PerspectiveQueryAdapter {
+    /** Same semantic as PerspectiveProxy.get(LinkQuery) */
+    linkQuery(query: LinkQuery): Promise<Perspective>;
+
+    /** Tells ADAM if Prolog queries are implemented by this Language.
+     * If not, prologQuery won't be used, instead in some circumstances,
+     * linkQuery() might be called with an all-query, followed by using
+     * ADAM's internal Prolog engine on the result.
+     */
+    supportsPrologQueries(): boolean;
+
+    /** Same semantic as PerspectiveProxy.infer, will return plain Prolog results */
+    infer(prologQuery: string): Promise<any>
+
+    /** Specify which links shall be returned through Prolog.
+     * Assumes unbound variables in query that describe a LinkExpression:
+     *  - Source
+     *  - Predicate
+     *  - Target
+     *  - Author
+     *  - Timestamp
+     * Will construct a Perspective where each link is a solution to the query.
+     */
+    prologQuery(query: string): Promise<Perspective>;
 }
