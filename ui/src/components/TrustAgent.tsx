@@ -11,11 +11,7 @@ const TrustAgent = (props: Props) => {
     state: { client },
   } = useContext(Ad4minContext);
 
-  const [opened, setOpened] = useState(false);
-
-  useEffect(() => {
-    setOpened(true);
-  }, []);
+  const [opened, setOpened] = useState(true);
 
   const addTrustedAgent = async () => {
     let agents = await client!.runtime.addTrustedAgents([props.candidate]);
