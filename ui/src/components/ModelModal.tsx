@@ -29,7 +29,26 @@ const llmModels = [
   "llama_34b_code",
   "llama_70b",
 ];
-const transcriptionModels = ["whisper"];
+const transcriptionModels = [
+  "whisper_tiny",
+  "whisper_tiny_quantized",
+  "whisper_tiny_en",
+  "whisper_tiny_en_quantized",
+  "whisper_base",
+  "whisper_base_en",
+  "whisper_small",
+  "whisper_small_en",
+  "whisper_medium",
+  "whisper_medium_en",
+  "whisper_medium_en_quantized_distil",
+  "whisper_large",
+  "whisper_large_v2",
+  "whisper_distil_medium_en",
+  "whisper_distil_large_v2",
+  "whisper_distil_large_v3",
+  "whisper_distil_large_v3_quantized",
+  "whisper_large_v3_turbo_quantized"
+];
 const embeddingModels = ["bert"];
 
 export default function ModelModal(props: { close: () => void; oldModel?: any }) {
@@ -192,8 +211,10 @@ export default function ModelModal(props: { close: () => void; oldModel?: any })
       else {
         const newModelId = await client!.ai.addModel(model);
         // if no default LLM set, mark new model as default
-        const defaultLLM = await client!.ai.getDefaultModel("LLM");
-        if (!defaultLLM) client!.ai.setDefaultModel("LLM", newModelId);
+        if (newModelType === "LLM") {
+          const defaultLLM = await client!.ai.getDefaultModel("LLM");
+          if (!defaultLLM) client!.ai.setDefaultModel("LLM", newModelId);
+        }
       }
       close();
     }
@@ -234,7 +255,7 @@ export default function ModelModal(props: { close: () => void; oldModel?: any })
         setNewModel(oldModel.local.fileName);
       } else {
         setNewModels(transcriptionModels);
-        setNewModel(oldModel.local.fileName);
+        setNewModel(oldModel.local.fileName || "whisper_small");
       }
 
       if (oldModel.api) {
@@ -298,7 +319,7 @@ export default function ModelModal(props: { close: () => void; oldModel?: any })
                             setNewModel("bert");
                           } else {
                             setNewModels(transcriptionModels);
-                            setNewModel("whisper");
+                            setNewModel("whisper_small");
                           }
                           closeMenu("ai-types");
                         }}

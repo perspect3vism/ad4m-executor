@@ -78,6 +78,11 @@ export default function ModelCard(props: {
               </j-button>
             </j-flex>
           )}
+          {modelType == "TRANSCRIPTION" && (
+            <j-button variant="subtle" size="sm" onClick={editModel}>
+              <j-icon name="pencil-square" size="sm" />
+            </j-button>
+          )}
         </j-flex>
       </j-box>
       <j-flex direction="column" gap="400">

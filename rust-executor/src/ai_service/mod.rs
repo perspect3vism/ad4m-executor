@@ -212,7 +212,7 @@ impl AIService {
         match model.model_type {
             ModelType::Llm => self.spawn_llm_model(model, None).await?,
             ModelType::Embedding => self.spawn_embedding_model(model).await,
-            ModelType::Transcription => Self::load_transcriber_model(&model).await,
+            ModelType::Transcription => Self::load_transcriber_model(model.id.clone()).await,
         };
         Ok(())
     }
@@ -868,7 +868,66 @@ impl AIService {
     // Whisper / Transcription
     // -------------------------------------
 
-    pub async fn open_transcription_stream(&self, _model_id: String) -> Result<String> {
+
+    fn whisper_string_to_model(whisper_string: String) -> Result<WhisperSource> {
+        match whisper_string.as_str() {
+            "whisper_tiny" => Ok(WhisperSource::Tiny),
+            "whisper_tiny_quantized" => Ok(WhisperSource::QuantizedTiny),
+            "whisper_tiny_en" => Ok(WhisperSource::TinyEn),
+            "whisper_tiny_en_quantized" => Ok(WhisperSource::QuantizedTinyEn),
+            "whisper_base" => Ok(WhisperSource::Base),
+            "whisper_base_en" => Ok(WhisperSource::BaseEn),
+            "whisper_small" => Ok(WhisperSource::Small),
+            "whisper_small_en" => Ok(WhisperSource::SmallEn),
+            "whisper_medium" => Ok(WhisperSource::Medium),
+            "whisper_medium_en" => Ok(WhisperSource::MediumEn),
+            "whisper_medium_en_quantized_distil" => Ok(WhisperSource::QuantizedDistilMediumEn),
+            "whisper_large" => Ok(WhisperSource::Large),
+            "whisper_large_v2" => Ok(WhisperSource::LargeV2),
+            "whisper_distil_medium_en" => Ok(WhisperSource::DistilMediumEn),
+            "whisper_distil_large_v2" => Ok(WhisperSource::DistilLargeV2),
+            "whisper_distil_large_v3"  => Ok(WhisperSource::DistilLargeV3),
+            "whisper_distil_large_v3_quantized" => Ok(WhisperSource::QuantizedDistilLargeV3),
+            "whisper_large_v3_turbo_quantized" => Ok(WhisperSource::QuantizedLargeV3Turbo),
+            _ => Err(anyhow!("Unknown whisper model: {}", whisper_string))
+        }
+    }
+
+    fn get_whisper_model_size(model_id: String) -> Result<WhisperSource> {
+        // Try to treat string as model size string first
+        if let Ok(model) = Self::whisper_string_to_model(model_id.clone()) {
+            return Ok(model);
+        }
+
+        // Try to get model from DB by ID
+        if let Ok(Some(model)) = Ad4mDb::with_global_instance(|db| db.get_model(model_id.clone())) {
+            if model.model_type != ModelType::Transcription {
+                return Err(anyhow!("Model '{}' is not a transcription model", model_id));
+            }
+            // Use filename from local model config
+            if let Some(local) = model.local {
+                return Self::whisper_string_to_model(local.file_name);
+            }
+        }
+
+        // if nothing above works, see if we have a transcription model in the DB and use that
+        // Try to find first transcription model in DB
+        if let Ok(models) = Ad4mDb::with_global_instance(|db| db.get_models()) {
+            if let Some(model) = models.into_iter().find(|m| m.model_type == ModelType::Transcription) {
+                if let Some(local) = model.local {
+                    return Self::whisper_string_to_model(local.file_name);
+                }
+            }
+        }
+
+        // Default to tiny if nothing found
+        Ok(WhisperSource::Tiny)
+        
+    }
+
+
+    pub async fn open_transcription_stream(&self, model_id: String) -> Result<String> {
+        let model_size = Self::get_whisper_model_size(model_id)?;
         let stream_id = uuid::Uuid::new_v4().to_string();
         let stream_id_clone = stream_id.clone();
         let (samples_tx, samples_rx) = futures_channel::mpsc::unbounded::<Vec<f32>>();
@@ -881,7 +940,7 @@ impl AIService {
 
             rt.block_on(async {
                 let maybe_model = WhisperBuilder::default()
-                    .with_source(WHISPER_MODEL)
+                    .with_source(model_size)
                     .with_device(Self::new_candle_device())
                     .build()
                     .await;
@@ -974,22 +1033,23 @@ impl AIService {
         }
     }
 
-    async fn load_transcriber_model(model: &crate::types::Model) {
-        let id = &model.id;
-        publish_model_status(id.clone(), 0.0, "Loading", false, false).await;
+    async fn load_transcriber_model(model_id: String) {
+        publish_model_status(model_id.clone(), 0.0, "Loading", false, false).await;
+
+        let model_size = Self::get_whisper_model_size(model_id.clone()).ok().unwrap_or(WHISPER_MODEL);
 
         let _ = WhisperBuilder::default()
-            .with_source(WHISPER_MODEL)
+            .with_source(model_size)
             .with_device(Self::new_candle_device())
             .build_with_loading_handler({
-                let name = id.clone();
+                let name = model_id.clone();
                 move |progress| {
                     tokio::spawn(handle_progress(name.clone(), progress));
                 }
             })
             .await;
 
-        publish_model_status(id.clone(), 100.0, "Loaded", true, false).await;
+        publish_model_status(model_id.clone(), 100.0, "Loaded", true, false).await;
     }
 
     pub async fn update_model(&self, model_id: String, model_config: ModelInput) -> Result<()> {
@@ -1060,7 +1120,7 @@ impl AIService {
                 // TODO: Handle embedding model updates
             }
             ModelType::Transcription => {
-                // TODO: Handle transcription model updates
+                Self::load_transcriber_model(updated_model.id.clone()).await;
             }
         }
 
